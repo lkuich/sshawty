@@ -726,7 +726,7 @@ impl eframe::App for App {
 
 fn main() -> eframe::Result {
     eframe::run_native(
-        "SSHawty",
+        "sshawty",
         eframe::NativeOptions {
             #[cfg(target_os = "linux")]
             event_loop_builder: Some(Box::new(|builder| {

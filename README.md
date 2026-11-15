@@ -1,14 +1,29 @@
-# SSHawty
+# sshawty
 
 A small Rust desktop app for sending screenshots to remote Codex/Claude sessions over SSH. Add hosts, drop an image onto a host card, then paste the copied absolute path into your remote chat.
 
-## Run
+## Download
 
-On macOS, open `dist/SSHawty.app`, or build it with:
+Download the archive for your platform from [GitHub Releases](https://github.com/lkuich/sshawty/releases/latest):
+
+| Platform | Download |
+| --- | --- |
+| macOS, Apple Silicon | `sshawty-macos-arm64.zip` |
+| macOS, Intel | `sshawty-macos-x86_64.zip` |
+| Windows, x64 | `sshawty-windows-x86_64.zip` |
+| Linux, x64 | `sshawty-linux-x86_64.tar.gz` |
+
+Extract the archive and launch the app. Linux builds target Ubuntu 24.04 or compatible systems and require X11/XWayland. macOS builds require macOS 12+ and are ad-hoc signed, not notarized. Windows builds are unsigned. All platforms need OpenSSH 9+ installed. Checksums are included in each release.
+
+For development builds, open a successful [Actions run](https://github.com/lkuich/sshawty/actions/workflows/check.yml) and download its platform artifact (GitHub sign-in required).
+
+## Run from source
+
+On macOS, open `dist/sshawty.app`, or build it with:
 
 ```sh
 ./scripts/package-macos.sh
-open dist/SSHawty.app
+open dist/sshawty.app
 ```
 
 On Windows and Linux:
@@ -59,6 +74,17 @@ An optional real OpenSSH test uploads a generated 8×8 PNG to a unique `/tmp/ssh
 SSHAWTY_TEST_HOST=user@host cargo test real_openssh_upload -- --ignored
 ```
 
-Verified locally: macOS release build, Clippy, unit/controlled-command tests, real SSH/SFTP transfer to the example host, and host editor/focused-view interaction. Windows and Linux targets also pass cross-compilation checks on this Mac; their native CI builds and GUI tests have not run here. Floating screenshot-preview delivery and cross-platform clipboard/drop behavior still need manual acceptance testing.
+CI checks formatting, Clippy, tests, and release builds on all supported platforms, including native AppKit file and screenshot-promise drop tests on macOS. Real SSH transfers, floating screenshot previews, and the macOS interface have also been checked locally. Windows and Linux clipboard/drop behavior still need manual GUI testing.
 
 No password storage, remote folder browser, tray/global shortcuts, automatic remote cleanup, updater, or telemetry.
+
+## Publishing a release
+
+Every main-branch push and pull request builds and tests all four platform archives. To publish a release, update the version in `Cargo.toml` (and `Cargo.lock`), commit it, then push a matching tag:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow checks that the tag matches the package version, waits for all platform checks and builds, then publishes the archives and SHA-256 checksums to GitHub Releases. The repository's built-in `GITHUB_TOKEN` is sufficient; no additional release secret is needed.
