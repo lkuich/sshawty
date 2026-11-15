@@ -21,6 +21,7 @@ struct App {
     state: state::State,
     dir: PathBuf,
     editor: Option<state::Host>,
+    editor_error: String,
     message: String,
     copied_until: Option<std::time::Instant>,
     warning: String,
@@ -48,6 +49,7 @@ impl App {
             state,
             dir,
             editor: None,
+            editor_error: String::new(),
             message,
             copied_until: None,
             warning: String::new(),
@@ -307,7 +309,7 @@ impl App {
                     self.toggle_focus(&host.id);
                 }
                 if icon_button(ui, Icon::Edit, "Edit host").clicked() {
-                    self.editor = Some(host.clone());
+                    self.edit_host(host.clone());
                 }
             },
         );
@@ -506,80 +508,122 @@ impl App {
         remove
     }
 
+    fn edit_host(&mut self, host: state::Host) {
+        self.editor = Some(host);
+        self.editor_error.clear();
+    }
+
     fn host_editor(&mut self, ctx: &egui::Context) {
         use design::*;
         use egui::*;
         let Some(mut host) = self.editor.take() else {
             return;
         };
+        let editing = self.state.hosts.iter().any(|h| h.id == host.id);
         let mut keep = true;
-        Window::new("Host settings")
-            .anchor(Align2::CENTER_CENTER, [0., 0.])
-            .default_width(360.)
-            .collapsible(false)
-            .resizable(false)
+        let mut save = false;
+        let mut remove = false;
+        let modal = Modal::new(Id::unique("host_editor"))
+            .backdrop_color(Color32::from_black_alpha(150))
+            .frame(
+                Frame::popup(&ctx.style_of(Theme::Dark))
+                    .fill(PANEL)
+                    .stroke(Stroke::new(1., BORDER))
+                    .corner_radius(16.)
+                    .inner_margin(24.),
+            )
             .show(ctx, |ui| {
-                ui.add_space(6.);
-                ui.label(RichText::new("A destination for your screenshots").color(MUTED));
-                ui.add_space(8.);
-                for (label, field) in [
-                    ("Name", &mut host.name),
-                    ("SSH target", &mut host.target),
-                    ("Remote folder", &mut host.folder),
-                ] {
-                    ui.label(RichText::new(label).size(12.).color(MUTED));
-                    ui.add(
-                        TextEdit::singleline(field)
-                            .desired_width(f32::INFINITY)
-                            .margin(vec2(10., 9.)),
-                    );
-                }
-                ui.small(
-                    RichText::new("Uses your existing SSH keys and configuration.").color(MUTED),
-                );
-                ui.add_space(12.);
+                ui.set_width(360.);
+                ui.spacing_mut().item_spacing = vec2(10., 6.);
                 ui.horizontal(|ui| {
-                    if self.state.hosts.iter().any(|h| h.id == host.id)
-                        && icon_button(ui, Icon::Trash, "Remove host").clicked()
-                    {
-                        self.state.hosts.retain(|h| h.id != host.id);
-                        if self.state.selected.as_ref() == Some(&host.id) {
-                            self.state.focused = false;
-                            self.state.selected = None;
+                    let (tile, _) = ui.allocate_exact_size(vec2(36., 36.), Sense::hover());
+                    ui.painter().rect_filled(tile, 10., BG);
+                    icon(ui.painter(), tile.shrink(8.), Icon::Server, ACCENT);
+                    ui.vertical(|ui| {
+                        ui.label(RichText::new(if editing { "Edit host" } else { "Add host" }).size(20.).strong());
+                        ui.label(RichText::new("A home for your screenshots.").size(12.).color(MUTED));
+                    });
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if icon_button(ui, Icon::Close, "Close host settings").clicked() {
+                            keep = false;
                         }
-                        self.save();
-                        keep = false;
+                    });
+                });
+                ui.add_space(18.);
+                for (label, hint, field, monospace) in [
+                    ("Display name", "Dev workstation", &mut host.name, false),
+                    ("SSH target", "dev@workstation or SSH alias", &mut host.target, true),
+                    ("Remote folder", "~/screenshots", &mut host.folder, true),
+                ] {
+                    let label = ui.label(RichText::new(label).size(12.).color(TEXT));
+                    let response = ui.add(
+                        TextEdit::singleline(field)
+                            .hint_text(RichText::new(hint).color(MUTED))
+                            .font(if monospace { TextStyle::Monospace } else { TextStyle::Body })
+                            .desired_width(f32::INFINITY)
+                            .margin(vec2(12., 11.)),
+                    ).labelled_by(label.id);
+                    if response.changed() {
+                        self.editor_error.clear();
+                    }
+                    ui.add_space(10.);
+                }
+                ui.label(RichText::new("Use an absolute path or ~/folder. Connects with your existing SSH keys and config.").size(11.).color(MUTED));
+                if !self.editor_error.is_empty() {
+                    ui.add_space(8.);
+                    Frame::new().fill(Color32::from_rgb(53, 32, 35)).corner_radius(8.).inner_margin(10.).show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.label(RichText::new(&self.editor_error).size(12.).color(Color32::from_rgb(248, 170, 169)));
+                    });
+                }
+                ui.add_space(14.);
+                ui.separator();
+                ui.add_space(10.);
+                ui.horizontal(|ui| {
+                    if editing {
+                        remove = icon_button(ui, Icon::Trash, "Remove host").clicked();
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if ui
-                            .add(
-                                Button::new(RichText::new("Save host").color(BG).strong())
-                                    .fill(ACCENT),
-                            )
-                            .clicked()
-                        {
-                            match host.validate() {
-                                Ok(()) => {
-                                    if let Some(h) =
-                                        self.state.hosts.iter_mut().find(|h| h.id == host.id)
-                                    {
-                                        *h = host.clone();
-                                    } else {
-                                        self.state.hosts.push(host.clone());
-                                    }
-                                    self.state.selected = Some(host.id.clone());
-                                    self.save();
-                                    keep = false;
-                                }
-                                Err(e) => self.warning = e,
-                            }
-                        }
-                        if ui.button("Cancel").clicked() {
+                        save = ui.add(
+                            Button::new(RichText::new(if editing { "Save changes" } else { "Add host" }).color(BG).strong())
+                                .fill(ACCENT)
+                                .min_size(vec2(112., 36.)),
+                        ).clicked();
+                        if ui.add(Button::new("Cancel").fill(BG).min_size(vec2(80., 36.))).clicked() {
                             keep = false;
                         }
                     });
                 });
             });
+        if modal.is_top_modal
+            && !modal.any_popup_open
+            && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape))
+        {
+            keep = false;
+        }
+        if keep && remove {
+            self.state.hosts.retain(|h| h.id != host.id);
+            if self.state.selected.as_ref() == Some(&host.id) {
+                self.state.focused = false;
+                self.state.selected = None;
+            }
+            self.save();
+            keep = false;
+        } else if keep && save {
+            match host.validate() {
+                Ok(()) => {
+                    if let Some(h) = self.state.hosts.iter_mut().find(|h| h.id == host.id) {
+                        *h = host.clone();
+                    } else {
+                        self.state.hosts.push(host.clone());
+                    }
+                    self.state.selected = Some(host.id.clone());
+                    self.save();
+                    keep = false;
+                }
+                Err(e) => self.editor_error = e,
+            }
+        }
         if keep {
             self.editor = Some(host);
         }
@@ -632,7 +676,7 @@ impl eframe::App for App {
                 ui.painter().rect_filled(logo,9.,ACCENT); icon(ui.painter(),logo.shrink(7.),Icon::Upload,BG);
                 ui.label(RichText::new("sshawty").size(25.).strong());
                 ui.with_layout(Layout::right_to_left(Align::Center),|ui| {
-                    if icon_button(ui,Icon::Plus,"Add host").clicked() {self.editor=Some(state::Host::default());}
+                    if icon_button(ui,Icon::Plus,"Add host").clicked() {self.edit_host(state::Host::default());}
                     if icon_button(ui,Icon::Paste,"Paste image to selected host").clicked() {self.paste();}
                 });
             });
@@ -664,7 +708,7 @@ impl eframe::App for App {
             let mut zones=vec![];
             let hosts:Vec<_>=self.state.hosts.iter().filter(|h|!self.state.focused||Some(&h.id)==self.state.selected.as_ref()).cloned().collect();
             ScrollArea::vertical().id_salt("hosts").max_height((ui.available_height()*0.56).max(248.)).show(ui,|ui| {
-                if hosts.is_empty() { Frame::new().fill(PANEL).corner_radius(14.).inner_margin(28.).show(ui,|ui| {ui.heading("Your remote workspace, one drop away.");ui.label(RichText::new("Add your first SSH host to get started.").color(MUTED));if ui.button("+ Add host").clicked(){self.editor=Some(state::Host::default());}}); }
+                if hosts.is_empty() { Frame::new().fill(PANEL).corner_radius(14.).inner_margin(28.).show(ui,|ui| {ui.heading("Your remote workspace, one drop away.");ui.label(RichText::new("Add your first SSH host to get started.").color(MUTED));if ui.button("+ Add host").clicked(){self.edit_host(state::Host::default());}}); }
                 let columns=if self.state.focused {1} else {((ui.available_width()/330.) as usize).clamp(1,3).min(hosts.len().max(1))};
                 for row in hosts.chunks(columns) {
                     ui.columns(columns,|uis| {for (host,ui) in row.iter().zip(uis) {let rect=self.host_card(ui,host,dragging,drag_host.as_deref(),drag_position);zones.push((host.id.clone(),rect));}});
