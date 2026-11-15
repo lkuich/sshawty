@@ -2,6 +2,19 @@
 
 A small Rust desktop app for sending screenshots to remote Codex/Claude sessions over SSH. Add hosts, drop an image onto a host card, then paste the copied absolute path into your remote chat.
 
+<img src="https://raw.githubusercontent.com/lkuich/sshawty/main/docs/screenshots/hosts.jpg" alt="sshawty host overview with two drop targets, icon controls, and recent upload history" width="960">
+
+<details>
+<summary>Focused view</summary>
+
+Focus one host with a double-click or the expand icon. Return with **All hosts**, Escape, or another double-click.
+
+<img src="https://raw.githubusercontent.com/lkuich/sshawty/main/docs/screenshots/focused.jpg" alt="sshawty focused view with a large drop target and a clear All hosts back button" width="960">
+
+</details>
+
+*macOS screenshots shown with sample hosts and upload history.*
+
 ## Download
 
 Download the archive for your platform from [GitHub Releases](https://github.com/lkuich/sshawty/releases/latest):
@@ -83,8 +96,8 @@ No password storage, remote folder browser, tray/global shortcuts, automatic rem
 Every main-branch push and pull request builds and tests all four platform archives. To publish a release, update the version in `Cargo.toml` (and `Cargo.lock`), commit it, then push a matching tag:
 
 ```sh
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 The workflow checks that the tag matches the package version, waits for all platform checks and builds, then publishes the archives and SHA-256 checksums to GitHub Releases. The repository's built-in `GITHUB_TOKEN` is sufficient; no additional release secret is needed.
