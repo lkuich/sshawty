@@ -734,6 +734,10 @@ fn main() -> eframe::Result {
                 builder.with_x11();
             })),
             viewport: egui::ViewportBuilder::default()
+                .with_icon(
+                    eframe::icon_data::from_png_bytes(include_bytes!("../assets/icon.png"))
+                        .expect("Bundled app icon must be a valid PNG"),
+                )
                 .with_inner_size([960.0, 780.0])
                 .with_min_inner_size([520.0, 640.0]),
             ..Default::default()

@@ -71,6 +71,12 @@ History and 160×100-or-smaller thumbnails persist until you clear them. Clearin
 
 `state.json` stores versioned host settings, selection, and completed uploads; `thumbnails/` holds previews. Writes replace the JSON atomically. An unreadable/unsupported state file is preserved and disables saving for that session. Move it aside or repair it before restarting. Thumbnails contain screenshot content, so treat the app-data directory accordingly.
 
+## App icon
+
+The app uses the same mint upload mark in its interface, macOS bundle, Windows executable, and window/taskbar icon. The editable source is `assets/icon.svg`; regenerate the checked-in PNG, ICO, and ICNS files with `scripts/generate-icons.sh` on macOS with ImageMagick installed. Normal builds use the checked-in files.
+
+Windows builds need the Windows SDK resource compiler (`rc.exe`) with MSVC, or MinGW-w64 resource tools when cross-compiling. GitHub runners include the required Windows SDK.
+
 ## Checks
 
 ```sh
@@ -96,8 +102,8 @@ No password storage, remote folder browser, tray/global shortcuts, automatic rem
 Every main-branch push and pull request builds and tests all four platform archives. To publish a release, update the version in `Cargo.toml` (and `Cargo.lock`), commit it, then push a matching tag:
 
 ```sh
-git tag v0.1.1
-git push origin v0.1.1
+git tag v0.1.2
+git push origin v0.1.2
 ```
 
 The workflow checks that the tag matches the package version, waits for all platform checks and builds, then publishes the archives and SHA-256 checksums to GitHub Releases. The repository's built-in `GITHUB_TOKEN` is sufficient; no additional release secret is needed.
