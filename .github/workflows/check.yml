@@ -19,8 +19,6 @@ jobs:
         include:
           - os: macos-15
             platform: macos-arm64
-          - os: macos-15-intel
-            platform: macos-x86_64
           - os: windows-latest
             platform: windows-x86_64
           - os: ubuntu-24.04
@@ -97,10 +95,9 @@ jobs:
           sha256sum *.zip *.tar.gz > SHA256SUMS.txt
           cat > release-notes.md <<'NOTES'
           ## Downloads
-          - **macos-arm64.zip**: Apple Silicon Macs.
-          - **macos-x86_64.zip**: Intel Macs.
-          - **windows-x86_64.zip**: 64-bit Windows.
-          - **linux-x86_64.tar.gz**: 64-bit Linux (Ubuntu 24.04 or compatible; X11/XWayland).
+          - **sshawty-macos-arm64.zip**: Apple Silicon Macs.
+          - **sshawty-windows-x86_64.zip**: 64-bit Windows.
+          - **sshawty-linux-x86_64.tar.gz**: 64-bit Linux (Ubuntu 24.04 or compatible; X11/XWayland).
 
           Extract the archive and launch sshawty. OpenSSH 9+ is required for uploads. macOS builds are ad-hoc signed, not Apple-notarized; Windows builds are unsigned. See the README for setup and platform requirements.
 
