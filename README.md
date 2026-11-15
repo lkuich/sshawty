@@ -102,8 +102,8 @@ No password storage, remote folder browser, tray/global shortcuts, automatic rem
 Every main-branch push and pull request builds and tests all four platform archives. To publish a release, update the version in `Cargo.toml` (and `Cargo.lock`), commit it, then push a matching tag:
 
 ```sh
-git tag v0.1.4
-git push origin v0.1.4
+git tag v0.1.5
+git push origin v0.1.5
 ```
 
 The workflow checks that the tag matches the package version, waits for all platform checks and builds, then publishes the archives and SHA-256 checksums to GitHub Releases. The repository's built-in `GITHUB_TOKEN` is sufficient; no additional release secret is needed.

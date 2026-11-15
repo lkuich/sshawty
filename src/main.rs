@@ -365,7 +365,7 @@ impl App {
         );
         let footer = Rect::from_min_size(
             rect.left_bottom() + vec2(18., -34.),
-            vec2(rect.width() - 64., 24.),
+            vec2(rect.width() - 36., 24.),
         );
         let status = self
             .statuses
@@ -388,28 +388,6 @@ impl App {
             .truncate(),
         )
         .on_hover_text(status);
-        if let Some(path) = self
-            .state
-            .history
-            .iter()
-            .find(|r| r.host_id == host.id)
-            .map(|r| r.path.clone())
-        {
-            ui.scope_builder(
-                UiBuilder::new().max_rect(Rect::from_min_size(
-                    rect.right_bottom() - vec2(46., 37.),
-                    vec2(30., 30.),
-                )),
-                |ui| {
-                    if icon_button(ui, Icon::Copy, "Copy latest upload path")
-                        .on_hover_text(&path)
-                        .clicked()
-                    {
-                        self.copy(&path);
-                    }
-                },
-            );
-        }
         if response.clicked() {
             self.state.click_host(&host.id, response.double_clicked());
             self.save();
