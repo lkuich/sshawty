@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+cargo build --release --locked
+bundle=dist/SSHawty.app
+mkdir -p "$bundle/Contents/MacOS"
+# Replace the inode so rebuilding cannot invalidate executable pages in a running app.
+cp target/release/sshawty "$bundle/Contents/MacOS/sshawty.new"
+mv -f "$bundle/Contents/MacOS/sshawty.new" "$bundle/Contents/MacOS/sshawty"
+cat > "$bundle/Contents/Info.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>sshawty</string>
+<key>CFBundleIdentifier</key><string>app.sshawty.desktop</string>
+<key>CFBundleName</key><string>SSHawty</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+<key>CFBundleShortVersionString</key><string>0.1.0</string>
+<key>LSMinimumSystemVersion</key><string>12.0</string>
+<key>NSHighResolutionCapable</key><true/>
+</dict></plist>
+PLIST
+plutil -lint "$bundle/Contents/Info.plist"
+codesign --force --deep --sign - "$bundle"
+codesign --verify --deep --strict "$bundle"
+printf '%s\n' "$bundle"
