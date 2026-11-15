@@ -218,14 +218,24 @@ impl App {
         let height = if self.state.focused { 232.0 } else { 216.0 };
         let (rect, response) =
             ui.allocate_exact_size(vec2(ui.available_width(), height), Sense::click());
+        let selected = self.state.selected.as_ref() == Some(&host.id);
         response.widget_info(|| {
             WidgetInfo::labeled(
                 Role::Button,
                 true,
-                format!("Select {}. Double-click to toggle focus", host.name),
+                format!(
+                    "{} {}. Double-click to toggle focus",
+                    if self.state.focused {
+                        "Focused host"
+                    } else if selected {
+                        "Deselect"
+                    } else {
+                        "Select"
+                    },
+                    host.name
+                ),
             )
         });
-        let selected = self.state.selected.as_ref() == Some(&host.id);
         let drop_over = self.editor.is_none()
             && (drag_host == Some(host.id.as_str())
                 || drag_position.is_some_and(|p| rect.intersect(ui.clip_rect()).contains(p)));
@@ -360,7 +370,7 @@ impl App {
             .get(&host.id)
             .map(String::as_str)
             .unwrap_or(if selected {
-                "Selected for paste"
+                ""
             } else {
                 "Double-click to focus"
             });
@@ -398,10 +408,8 @@ impl App {
                 },
             );
         }
-        if response.double_clicked() {
-            self.toggle_focus(&host.id);
-        } else if response.clicked() {
-            self.state.selected = Some(host.id.clone());
+        if response.clicked() {
+            self.state.click_host(&host.id, response.double_clicked());
             self.save();
         }
         rect.intersect(ui.clip_rect())
@@ -535,8 +543,10 @@ impl App {
                         && icon_button(ui, Icon::Trash, "Remove host").clicked()
                     {
                         self.state.hosts.retain(|h| h.id != host.id);
-                        self.state.focused = false;
-                        self.state.selected = self.state.hosts.first().map(|h| h.id.clone());
+                        if self.state.selected.as_ref() == Some(&host.id) {
+                            self.state.focused = false;
+                            self.state.selected = None;
+                        }
                         self.save();
                         keep = false;
                     }
@@ -675,13 +685,13 @@ impl eframe::App for App {
                 }
             }
             ui.add_space(12.);
-            let history:Vec<_>=self.state.history.iter().filter(|r|!self.state.focused||Some(&r.host_id)==self.state.selected.as_ref()).cloned().collect();
+            let history:Vec<_>=self.state.visible_history().cloned().collect();
             ui.horizontal(|ui| {
                 ui.label(RichText::new("Recent uploads").size(18.).strong());ui.label(RichText::new(history.len().to_string()).size(12.).color(MUTED));
                 ui.with_layout(Layout::right_to_left(Align::Center),|ui| {if !history.is_empty() && icon_button(ui,Icon::Trash,"Clear visible history (remote files stay intact)").clicked(){self.remove_history(&history.iter().map(|r|r.id.clone()).collect::<Vec<_>>());}});
             });
             let mut remove=vec![];
-            ScrollArea::vertical().id_salt("history").auto_shrink([false,false]).max_height((ui.available_height()-46.).max(70.)).show_rows(ui,100.,history.len().max(1),|ui,range| {
+            ScrollArea::vertical().id_salt(("history", &self.state.selected)).auto_shrink([false,false]).max_height((ui.available_height()-46.).max(70.)).show_rows(ui,100.,history.len().max(1),|ui,range| {
                 if history.is_empty() {ui.add_space(22.);ui.horizontal(|ui| {let (r,_)=ui.allocate_exact_size(vec2(28.,28.),Sense::hover());icon(ui.painter(),r,Icon::Clock,MUTED);ui.label(RichText::new("Uploaded screenshots will appear here.").color(MUTED));});}
                 else {for record in &history[range] { if self.history_row(ui,record) {remove.push(record.id.clone());} }}
             });

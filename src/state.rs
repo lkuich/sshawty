@@ -66,6 +66,26 @@ pub struct State {
     pub focused: bool,
 }
 impl State {
+    pub fn click_host(&mut self, id: &str, double_clicked: bool) {
+        if double_clicked {
+            self.toggle_focus(id);
+        } else if !self.focused {
+            self.selected = if self.selected.as_deref() == Some(id) {
+                None
+            } else {
+                Some(id.to_owned())
+            };
+        }
+    }
+
+    pub fn visible_history(&self) -> impl Iterator<Item = &Upload> {
+        self.history.iter().filter(|upload| {
+            self.selected
+                .as_ref()
+                .is_none_or(|id| id == &upload.host_id)
+        })
+    }
+
     pub fn toggle_focus(&mut self, id: &str) {
         self.focused = !(self.focused && self.selected.as_deref() == Some(id));
         self.selected = Some(id.to_owned());
@@ -149,6 +169,52 @@ mod tests {
 #[cfg(test)]
 mod focus_tests {
     use super::*;
+    #[test]
+    fn selection_filters_history_and_toggles_off() {
+        let mut state = State::default();
+        for host in ["a", "b", "a"] {
+            state.history.push(Upload {
+                id: uuid::Uuid::new_v4().to_string(),
+                host_id: host.into(),
+                host_name: host.into(),
+                target: host.into(),
+                filename: "shot.png".into(),
+                path: "/shots/shot.png".into(),
+                time: String::new(),
+            });
+        }
+        assert_eq!(state.visible_history().count(), 3);
+        state.click_host("a", false);
+        assert_eq!(state.visible_history().count(), 2);
+        assert!(state.visible_history().all(|r| r.host_id == "a"));
+        state.click_host("b", false);
+        assert_eq!(state.visible_history().count(), 1);
+        assert_eq!(state.visible_history().next().unwrap().host_id, "b");
+        state.click_host("b", false);
+        assert!(state.selected.is_none());
+        assert_eq!(state.visible_history().count(), 3);
+        state.click_host("empty", false);
+        assert_eq!(state.visible_history().count(), 0);
+    }
+
+    #[test]
+    fn double_click_keeps_focused_host_until_returning_to_grid() {
+        let mut state = State::default();
+        for _ in 0..2 {
+            // egui reports a single click first, then a double click.
+            state.click_host("a", false);
+            state.click_host("a", true);
+            assert!(state.focused);
+            state.click_host("a", false);
+            assert_eq!(state.selected.as_deref(), Some("a"));
+            state.click_host("a", true);
+            assert!(!state.focused);
+            assert_eq!(state.selected.as_deref(), Some("a"));
+        }
+        state.click_host("a", false);
+        assert!(state.selected.is_none());
+    }
+
     #[test]
     fn focus_toggles_and_switches_hosts() {
         let mut state = State::default();

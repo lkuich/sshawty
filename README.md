@@ -53,7 +53,7 @@ System requirements: OpenSSH **9 or newer**, with both `ssh` and `scp` on PATH; 
 
 1. Verify `ssh your-host` works in Terminal. Accept the host fingerprint only after verifying it, and load encrypted keys into your SSH agent.
 2. Add a display name, an SSH alias or `user@host`, and a destination such as `~/screenshots`. Set ports, identity files, and jump hosts in your normal SSH config. Bracket IPv6 addresses.
-3. Drop PNG, JPEG, or WebP files on a card. On macOS, floating screenshot previews are received through AppKit file promises. Use the expand icon or double-click a host card to focus it. Double-click again, use **All hosts**, or press Escape to return. Icon buttons have tooltips and accessibility labels.
+3. Click a host card in the grid to select it and show only its recent uploads. Click it again to clear the selection and show all uploads. Drop PNG, JPEG, or WebP files on a card. On macOS, floating screenshot previews are received through AppKit file promises. Use the expand icon or double-click a host card to focus it. Double-click again, use **All hosts**, or press Escape to return. Icon buttons have tooltips and accessibility labels.
 4. Select a host and use **Paste image**, or Cmd+V / Ctrl+V outside a text field, for clipboard screenshots.
 5. Successful uploads copy absolute remote paths. A multi-file batch copies one path per line. Click any history path to copy it again.
 
@@ -102,8 +102,8 @@ No password storage, remote folder browser, tray/global shortcuts, automatic rem
 Every main-branch push and pull request builds and tests all four platform archives. To publish a release, update the version in `Cargo.toml` (and `Cargo.lock`), commit it, then push a matching tag:
 
 ```sh
-git tag v0.1.2
-git push origin v0.1.2
+git tag v0.1.3
+git push origin v0.1.3
 ```
 
 The workflow checks that the tag matches the package version, waits for all platform checks and builds, then publishes the archives and SHA-256 checksums to GitHub Releases. The repository's built-in `GITHUB_TOKEN` is sufficient; no additional release secret is needed.
