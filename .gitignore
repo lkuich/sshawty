@@ -1,3 +1,6 @@
 /target
 /dist
 .DS_Store
+
+# Keep the original screen recording local; commit the optimized README media.
+/demo.mov

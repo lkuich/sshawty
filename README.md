@@ -1,19 +1,18 @@
 # sshawty
 
-A small Rust desktop app for sending screenshots to remote Codex/Claude sessions over SSH. Add hosts, drop an image onto a host card, then paste the copied absolute path into your remote chat.
+**Screenshots for Codex and Claude Code sessions over SSH.**
 
-*Interface previews below are from v0.1.1 with sample data. Current releases filter history by host selection, use the redesigned host dialog, and keep manual copy controls in upload history only.*
+Image paste that works locally can fail in an SSH session: the screenshot is on your computer, while the coding agent is running on another machine. sshawty gets the image onto that remote machine and copies its absolute path to your clipboard.
 
-<img src="https://raw.githubusercontent.com/lkuich/sshawty/main/docs/screenshots/hosts.jpg" alt="sshawty v0.1.1 host overview with two drop targets, icon controls, and recent upload history" width="960">
+1. Take a screenshot on your computer.
+2. Drop it onto a saved SSH host in sshawty. The app uploads it with SCP and copies the remote path.
+3. Paste that path into your remote Codex or Claude chat. The agent can read the image from its own filesystem.
 
-<details>
-<summary>Focused view preview (v0.1.1)</summary>
+No manual SCP commands or retyping paths. Hosts, destination folders, and upload history are saved for next time. Built in Rust with a small native interface.
 
-Focus one host with a double-click or the expand icon. Return with **All hosts**, Escape, or another double-click.
+<img src="https://raw.githubusercontent.com/lkuich/sshawty/main/docs/demo.gif" alt="Demo: screenshot paste fails in a remote Codex session, then succeeds after the screenshot is uploaded through sshawty" width="960">
 
-<img src="https://raw.githubusercontent.com/lkuich/sshawty/main/docs/screenshots/focused.jpg" alt="sshawty v0.1.1 focused view with a large drop target and a clear All hosts back button" width="960">
-
-</details>
+*The demo shows a failed image paste over SSH, uploading the screenshot through sshawty, and adding it to the same remote Codex chat.* [Download the sharper MP4](https://github.com/lkuich/sshawty/raw/refs/heads/main/docs/demo.mp4).
 
 ## Download
 
